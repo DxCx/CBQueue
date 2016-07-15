@@ -1,6 +1,6 @@
 {
   "name": "CBQueue",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Generic Callback Queue, based on promises",
   "main": "lib/main.js",
   "typings": "lib/main.d.ts",

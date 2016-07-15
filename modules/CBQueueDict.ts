@@ -51,8 +51,10 @@ export class CBQueueDict<T> {
 
         this._started = true;
         this._initialValue = initialValue;
-        for ( let q of this._queues ) {
-            pArray.push(q.start(initialValue));
+        for ( let q in this._queues ) {
+            if ( true === this._queues.hasOwnProperty(q) ) {
+                pArray.push(this._queues[q].start(initialValue));
+            }
         }
 
         return Q.all(pArray);
