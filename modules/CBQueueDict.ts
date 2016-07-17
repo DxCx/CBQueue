@@ -1,7 +1,6 @@
 "use strict";
 
 import {CBQueue} from "./CBQueue";
-import * as Q from "q";
 
 export class CBQueueDict<T> {
     private _queues: Array<CBQueue<T>>;
@@ -23,8 +22,8 @@ export class CBQueueDict<T> {
      * @returns a promise that determinates the current callback has ran.
      */
     public push(queueName: string,
-                handler: () => T | Q.Promise<T>,
-                highPriority: boolean = false): Q.Promise<T> {
+                handler: () => T | Promise<T>,
+                highPriority: boolean = false): Promise<T> {
         if ( false === this._queues.hasOwnProperty(queueName) ) {
             this._queues[queueName] = new CBQueue<T>();
 
@@ -42,8 +41,8 @@ export class CBQueueDict<T> {
      * @param initialValue to pass to the first callback in chain.
      * @returns a promise that all prepared queues has started to run.
      */
-    public start(initialValue?: T): Q.Promise<T[]> {
-        let pArray: Array<Q.Promise<T>> = [];
+    public start(initialValue?: T): Promise<T[]> {
+        let pArray: Array<Promise<T>> = [];
 
         if ( true === this._started ) {
             throw new Error("Queue can be started only once!");
@@ -57,6 +56,6 @@ export class CBQueueDict<T> {
             }
         }
 
-        return Q.all(pArray);
+        return Promise.all<T>(pArray);
     }
 }

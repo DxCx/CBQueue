@@ -20,14 +20,16 @@ export class CBQueue<T> {
      * @param initialValue to pass to the first callback in chain.
      * @returns a promise that determinates the current callback has ran.
      */
-    public start(initialValue?: T): Q.Promise<T> {
+    public start(initialValue?: T): Promise<T> {
         if ( true === this._started ) {
             throw new Error("Queue can be started only once!");
         }
 
         this._started = true;
         this._callNext(this._initialD, initialValue);
-        return this._initialD.promise;
+        return new Promise<T>((resolve, reject) => {
+            resolve(this._initialD.promise);
+        });
     }
 
     /**
@@ -39,8 +41,8 @@ export class CBQueue<T> {
      * low priority items will be appended to the end.
      * @returns a promise that determinates the current callback has ran.
      */
-    public push(handler: () => T | Q.Promise<T>,
-                highPriority: boolean = false): Q.Promise<T> {
+    public push(handler: () => T | Promise<T>,
+                highPriority: boolean = false): Promise<T> {
         /* Prepare our decorated handler */
         let d: Q.Deferred<T> = Q.defer<T>();
         let custHandler: (value?: T) => Q.Promise<T> = this._decorateHandler(d, handler);
@@ -68,7 +70,7 @@ export class CBQueue<T> {
         /**
          * returns a promise for the current item under process.
          */
-        return this._callbackQueue;
+        return this._qToPromise(this._callbackQueue);
     }
 
     /**
@@ -78,22 +80,22 @@ export class CBQueue<T> {
      * @param handler handler to decorate
      * @returns a promise that will be resolved once this block is done.
      */
-    private _decorateHandler(d: Q.Deferred<T>, handler: (value?: T) => T | Q.Promise<T>): (value?: T) => Q.Promise<T> {
+    private _decorateHandler(d: Q.Deferred<T>, handler: (value?: T) => T | Promise<T>): (value?: T) => Q.Promise<T> {
         return (value?: T): Q.Promise<T> => {
             try {
                 /*
                  * Initially, execute original callback,
                  * so we can retrieve the value (or a promise for a value)
                  */
-                let rawRetValue: T | Q.Promise<T> = handler();
-                let retPromise: Q.Promise<T>;
+                let rawRetValue: T | Promise<T> = handler();
+                let retPromise: Promise<T>;
 
-                if ( undefined === (rawRetValue as Q.Promise<T>).then ) {
+                if ( undefined === (rawRetValue as Promise<T>).then ) {
                     /* We got a value, convert to promise for that value */
-                    retPromise = Q.resolve<T>(rawRetValue as T);
+                    retPromise = Promise.resolve<T>(rawRetValue as T);
                 } else {
                     /* We got a promise, just use it. */
-                    retPromise = rawRetValue as Q.Promise<T>;
+                    retPromise = rawRetValue as Promise<T>;
                 }
 
                 /*
@@ -108,6 +110,12 @@ export class CBQueue<T> {
             }
             return d.promise;
         };
+    }
+
+    private _qToPromise(p: Q.Promise<T>): Promise<T> {
+        return new Promise<T>((resolve, reject) => {
+            resolve(p);
+        });
     }
 
     /**
