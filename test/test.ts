@@ -140,7 +140,7 @@ describe("CBQueueDict", () => {
         expect(cbqDict.remove("ObsB")).to.be.fulfilled;
 
         expect(cbqDict.all).to.be.a("function");
-        expect(cbqDict.all(() => {
+        expect(cbqDict.all((queueName: string) => {
             counter += 1;
         })).to.be.fulfilled;
 

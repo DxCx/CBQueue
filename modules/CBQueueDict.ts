@@ -42,13 +42,15 @@ export class CBQueueDict<T> {
      * just right after the currently running one is done.
      * low priority items will be appended to the end.
      */
-    public all(handler: () => T | Promise<T>,
+    public all(handler: (queueName: string) => T | Promise<T>,
                highPriority: boolean = false): Promise<T[]> {
         let pArray: Array<Promise<T>> = [];
 
         for ( let q in this._queues ) {
             if ( true === this._queues.hasOwnProperty(q) ) {
-                pArray.push(this._queues[q].push(handler, highPriority));
+                pArray.push(this._queues[q].push(() => {
+                    return handler(q);
+                }, highPriority));
             }
         }
 
