@@ -2,14 +2,15 @@
   "name": "CBQueue",
   "version": "0.0.1",
   "globalDependencies": {
-    "node": "registry:dt/node#6.0.0+20160709114037",
+    "node": "registry:dt/node#6.0.0+20160720070758",
     "q": "registry:dt/q#0.0.0+20160613154756"
   },
   "dependencies": {
-    "es6-promise": "registry:npm/es6-promise#3.0.0+20160211003958"
+    "es6-promise": "registry:npm/es6-promise#3.0.0+20160723033700"
   },
   "devDependencies": {
-    "chai": "registry:npm/chai#3.5.0+20160415060238"
+    "chai": "registry:npm/chai#3.5.0+20160723033700",
+    "chai-as-promised": "registry:npm/chai-as-promised#5.1.0+20160310030142"
   },
   "globalDevDependencies": {
     "mocha": "registry:dt/mocha#2.2.5+20160720003353"

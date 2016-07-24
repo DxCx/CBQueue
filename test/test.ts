@@ -1,7 +1,10 @@
 "use strict";
 
 import { CBQueue, CBQueueDict } from "../";
-import { expect } from "chai";
+import { use as chaiUse, expect } from "chai";
+import * as Q from "q";
+
+chaiUse(require("chai-as-promised"));
 
 describe("CBQueue", () => {
     const cbq: CBQueue<void> = new CBQueue<void>();
@@ -25,10 +28,47 @@ describe("CBQueue", () => {
         done();
     });
 
-    it("should run in the right sequance", (done) => {
-        // TODO: Sequance test
-        done();
-    });
+    it("should run callbacks in the right priority", (done: () => void) => {
+        let counter: number = 0;
+
+        expect(cbq.push(() => {
+            counter += 1;
+            expect(counter).be.equal(1);
+            return new Promise<void>((resolve, reject) => {
+                Q.delay(5).then(() => resolve(undefined), (err) => reject(err));
+            });
+        }, false)).be.fulfilled;
+
+        expect(cbq.push(() => {
+            counter += 1;
+            expect(counter).be.equal(5);
+            done();
+        }, false)).be.fulfilled;
+
+        expect(cbq.push(() => {
+            counter += 1;
+            expect(counter).be.equal(2);
+            return new Promise<void>((resolve, reject) => {
+                Q.delay(5).then(() => resolve(undefined), (err) => reject(err));
+            });
+        }, true)).be.fulfilled;
+
+        expect(cbq.push(() => {
+            counter += 1;
+            expect(counter).be.equal(4);
+            return new Promise<void>((resolve, reject) => {
+                Q.delay(5).then(() => resolve(undefined), (err) => reject(err));
+            });
+        }, false)).be.fulfilled;
+
+        expect(cbq.push(() => {
+            counter += 1;
+            expect(counter).be.equal(3);
+            return new Promise<void>((resolve, reject) => {
+                Q.delay(5).then(() => resolve(undefined), (err) => reject(err));
+            });
+        }, true)).be.fulfilled;
+   });
 });
 
 describe("CBQueueDict", () => {
