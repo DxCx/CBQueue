@@ -36,6 +36,41 @@ export class CBQueueDict<T> {
     }
 
     /**
+     * method is used to run callback on all Queues in dict.
+     * @param handler callback to push.
+     * @param highPriority setting to true will cause the callback to be called
+     * just right after the currently running one is done.
+     * low priority items will be appended to the end.
+     */
+    public all(handler: () => T | Promise<T>,
+               highPriority: boolean = false): Promise<T[]> {
+        let pArray: Array<Promise<T>> = [];
+
+        for ( let q in this._queues ) {
+            if ( true === this._queues.hasOwnProperty(q) ) {
+                pArray.push(this._queues[q].push(handler, highPriority));
+            }
+        }
+
+        return Promise.all<T>(pArray);
+    }
+
+    /**
+     * method is used to remove CBQueues from the dict.
+     * @param queueName the name of the queue to remove
+     * @returns a promsie that resolves when the queue is removed.
+     */
+    public remove(queueName: string): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            if ( false === this._queues.hasOwnProperty(queueName) ) {
+                reject(`${queueName} is not a queue`);
+            }
+            delete this._queues[queueName];
+            resolve(undefined);
+        });
+    }
+
+    /**
      * method is used to start the queue handling,
      *
      * @param initialValue to pass to the first callback in chain.
