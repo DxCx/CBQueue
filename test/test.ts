@@ -28,46 +28,47 @@ describe("CBQueue", () => {
         });
     });
 
-    it("should run callbacks in the right priority", (done: () => void) => {
+    it("should run callbacks in the right priority", (done: (error?: Error) => void) => {
         let counter: number = 0;
 
-        expect(cbq.push(() => {
+        Q.all([cbq.push(() => {
             counter += 1;
             expect(counter).be.equal(1);
             return new Promise<void>((resolve, reject) => {
                 Q.delay(5).then(() => resolve(undefined), (err) => reject(err));
             });
-        }, false)).be.fulfilled;
-
-        expect(cbq.push(() => {
+        }, false),
+        cbq.push(() => {
             counter += 1;
-            expect(counter).be.equal(5);
-            done();
-        }, false)).be.fulfilled;
-
-        expect(cbq.push(() => {
+            expect(counter).be.equal(4);
+        }, false),
+        cbq.push(() => {
             counter += 1;
             expect(counter).be.equal(2);
             return new Promise<void>((resolve, reject) => {
                 Q.delay(5).then(() => resolve(undefined), (err) => reject(err));
             });
-        }, true)).be.fulfilled;
-
-        expect(cbq.push(() => {
+        }, true),
+        cbq.push(() => {
             counter += 1;
-            expect(counter).be.equal(4);
+            expect(counter).be.equal(5);
             return new Promise<void>((resolve, reject) => {
                 Q.delay(5).then(() => resolve(undefined), (err) => reject(err));
             });
-        }, false)).be.fulfilled;
-
-        expect(cbq.push(() => {
+        }, false),
+        cbq.push(() => {
             counter += 1;
             expect(counter).be.equal(3);
             return new Promise<void>((resolve, reject) => {
                 Q.delay(5).then(() => resolve(undefined), (err) => reject(err));
             });
-        }, true)).be.fulfilled;
+        }, true),
+        ]).then(() => {
+            done();
+        }).catch((err) => {
+            console.log(err);
+            done(err);
+        });
    });
 });
 

@@ -64,7 +64,6 @@ export class CBQueue<T> {
              * Chaining to high priority items.
              */
             this._priorityItems.push(custHandler);
-            this._callbackQueue = d.promise;
         }
 
         /**
@@ -90,12 +89,12 @@ export class CBQueue<T> {
                 let rawRetValue: T | Promise<T> = handler();
                 let retPromise: Promise<T>;
 
-                if ( undefined === (rawRetValue as Promise<T>).then ) {
-                    /* We got a value, convert to promise for that value */
-                    retPromise = Promise.resolve<T>(rawRetValue as T);
-                } else {
+                if ( (undefined !== rawRetValue) && (undefined !== (rawRetValue as Promise<T>).then) ) {
                     /* We got a promise, just use it. */
                     retPromise = rawRetValue as Promise<T>;
+                } else {
+                    /* We got a value, convert to promise for that value */
+                    retPromise = Promise.resolve<T>(rawRetValue as T);
                 }
 
                 /*

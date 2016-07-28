@@ -2,7 +2,7 @@
   "name": "CBQueue",
   "version": "0.0.1",
   "globalDependencies": {
-    "node": "registry:dt/node#6.0.0+20160720070758",
+    "node": "registry:dt/node#6.0.0+20160728152422",
     "q": "registry:dt/q#0.0.0+20160613154756"
   },
   "dependencies": {
