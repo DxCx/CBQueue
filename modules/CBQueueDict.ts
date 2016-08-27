@@ -3,12 +3,22 @@
 import {CBQueue} from "./CBQueue";
 
 export class CBQueueDict<T> {
-    private _queues: Array<CBQueue<T>>;
+    private _queues: { [key: string]: CBQueue<T> };
     private _started: boolean = false;
     private _initialValue: T;
 
     constructor() {
-        this._queues = [];
+        this._queues = {};
+    }
+
+    public isBusy(queueName: string): Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
+            if ( true === this._started ) {
+                throw new Error("Queue can be started only once!");
+            }
+
+            resolve(this._queues[queueName].busy$.take(1).toPromise());
+        });
     }
 
     /**
@@ -79,20 +89,15 @@ export class CBQueueDict<T> {
      * @returns a promise that all prepared queues has started to run.
      */
     public start(initialValue?: T): Promise<T[]> {
-        let pArray: Array<Promise<T>> = [];
-
         if ( true === this._started ) {
             throw new Error("Queue can be started only once!");
         }
 
         this._started = true;
         this._initialValue = initialValue;
-        for ( let q in this._queues ) {
-            if ( true === this._queues.hasOwnProperty(q) ) {
-                pArray.push(this._queues[q].start(initialValue));
-            }
-        }
 
-        return Promise.all<T>(pArray);
+        return Promise.all<T>(Object.keys(this._queues).map((q: string) => {
+            return this._queues[q].start(initialValue);
+        }));
     }
 }

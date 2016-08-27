@@ -1,10 +1,12 @@
 "use strict";
 
 import { CBQueue, CBQueueDict } from "../";
-import { use as chaiUse, expect } from "chai";
+import { should, use as chaiUse, expect } from "chai";
 import * as Q from "q";
+import { Subscription } from "rxjs";
 
 chaiUse(require("chai-as-promised"));
+should();
 
 describe("CBQueue", () => {
     const cbq: CBQueue<void> = new CBQueue<void>();
@@ -69,7 +71,76 @@ describe("CBQueue", () => {
             console.log(err);
             done(err);
         });
-   });
+    });
+
+    it("should have a working busy$ observable", (done) => {
+        let counter: number = 0;
+        let busyCalls: number = 0;
+        let unsubscribe = cbq.busy$.subscribe((state: Boolean) => {
+            busyCalls += 1;
+            switch ( busyCalls ) {
+                case 1:
+                    // Start off empty queue
+                    expect(counter).be.equal(0);
+                    expect(state).be.equal(false);
+                    break;
+                case 2:
+                    // Should be called before CB resolved.
+                    expect(counter).be.equal(0);
+                    expect(state).be.equal(true);
+                    break;
+                case 3:
+                    // Should be called after last CB resolved.
+                    expect(counter).be.equal(5);
+                    expect(state).be.equal(false);
+
+                    unsubscribe.unsubscribe();
+                    done();
+                    break;
+            }
+        }, (err: Error) => done(err), () => {
+            console.log("done");
+        });
+
+        Q.all([cbq.push(() => {
+            counter += 1;
+            expect(counter).be.equal(1);
+            return new Promise<void>((resolve, reject) => {
+                Q.delay(5).then(() => resolve(undefined), (err) => reject(err));
+            });
+        }, false),
+        cbq.push(() => {
+            counter += 1;
+            expect(counter).be.equal(4);
+        }, false),
+        cbq.push(() => {
+            counter += 1;
+            expect(counter).be.equal(2);
+            return new Promise<void>((resolve, reject) => {
+                Q.delay(5).then(() => resolve(undefined), (err) => reject(err));
+            });
+        }, true),
+        cbq.push(() => {
+            counter += 1;
+            expect(counter).be.equal(5);
+            return new Promise<void>((resolve, reject) => {
+                Q.delay(5).then(() => resolve(undefined), (err) => reject(err));
+            });
+        }, false),
+        cbq.push(() => {
+            counter += 1;
+            expect(counter).be.equal(3);
+            return new Promise<void>((resolve, reject) => {
+                Q.delay(5).then(() => resolve(undefined), (err) => reject(err));
+            });
+        }, true),
+        ]).catch((err) => {
+            unsubscribe.unsubscribe();
+            console.log(err);
+            done(err);
+        });
+
+    });
 });
 
 describe("CBQueueDict", () => {
@@ -149,6 +220,39 @@ describe("CBQueueDict", () => {
         cbqDict.start().then(() => {
             expect(counter).to.be.equal(2);
             done();
+        });
+    });
+
+    it("isBusy to be working", (done) => {
+        const cbqDict: CBQueueDict<void> = new CBQueueDict<void>();
+        let counter: number = 0;
+
+        expect(cbqDict.push("ObsA", () => {
+            counter += 1;
+            cbqDict.isBusy("ObsA").should.eventually.equal(true);
+        })).be.fulfilled;
+
+        expect(cbqDict.push("ObsB", () => {
+            counter += 1;
+            cbqDict.isBusy("ObsB").should.eventually.equal(true);
+        })).be.instanceof(Promise);
+
+        expect(cbqDict.push("ObsC", () => {
+            counter += 1;
+            cbqDict.isBusy("ObsC").should.eventually.equal(true);
+        })).be.instanceof(Promise);
+
+        expect(cbqDict.isBusy).to.be.a("function");
+        cbqDict.isBusy("ObsA").should.eventually.equal(false);
+        cbqDict.isBusy("ObsB").should.eventually.equal(false);
+        cbqDict.isBusy("ObsC").should.eventually.equal(false);
+
+        expect(cbqDict.start).to.be.a("function");
+        cbqDict.start().then(() => {
+            expect(counter).to.be.equal(3);
+            done();
+        }).catch((err: Error) => {
+            done(err);
         });
     });
 });

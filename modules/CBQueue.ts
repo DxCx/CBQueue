@@ -1,17 +1,34 @@
 "use strict";
 
 import * as Q from "q";
+import { BehaviorSubject, Observable } from "rxjs";
 
 export class CBQueue<T> {
     private _callbackQueue: Q.Promise<T>;
     private _priorityItems: Array<(value?: T) => Q.Promise<T>>;
     private _started: boolean = false;
     private _initialD: Q.Deferred<T>;
+    private _tasksCount: number;
+    private _busy$: BehaviorSubject<boolean>;
 
     constructor() {
+        this._busy$ = new BehaviorSubject<boolean>(false);
+        this._tasksCount = 0;
         this._initialD = Q.defer<T>();
         this._callbackQueue = this._initialD.promise;
         this._priorityItems = [];
+    }
+
+    /**
+     * getter observable for queue state.
+     * @returns Observable which sends queue state (busy - true/free - false)
+     */
+    public get busy$(): Observable<boolean> {
+        return this._busy$
+               .asObservable()
+               .distinctUntilChanged()
+               .publish()
+               .refCount();
     }
 
     /**
@@ -46,6 +63,8 @@ export class CBQueue<T> {
         /* Prepare our decorated handler */
         let d: Q.Deferred<T> = Q.defer<T>();
         let custHandler: (value?: T) => Q.Promise<T> = this._decorateHandler(d, handler);
+        this._tasksCount += 1;
+        this._busy$.next(true);
 
         if ( false === this._callbackQueue.isPending() ) {
             /* Queue is currently empty, starting a new one */
@@ -102,6 +121,13 @@ export class CBQueue<T> {
                  * call the next one (Or resolve current)
                  */
                 retPromise.then((nextValue?: T) => {
+                    this._tasksCount -= 1;
+                    if ( 0 === this._tasksCount ) {
+                        this._busy$.next(false);
+                    } else if ( this._tasksCount < 0 ) {
+                        throw new Error("Task count < 0, WTF?");
+                    }
+
                     this._callNext(d, nextValue);
                 }, d.reject);
             } catch (e) {
