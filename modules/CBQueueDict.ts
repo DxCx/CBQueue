@@ -1,6 +1,7 @@
 "use strict";
 
 import {CBQueue} from "./CBQueue";
+import { Observable } from "rxjs";
 
 export class CBQueueDict<T> {
     private _queues: { [key: string]: CBQueue<T> };
@@ -11,6 +12,27 @@ export class CBQueueDict<T> {
         this._queues = {};
     }
 
+    /**
+     * getter that is used to subscribe on a specific query status
+     * @returns dictionary with observables of all queues.
+     */
+    public get busy$(): { [key: string]: Observable<boolean> } {
+        return Object.keys(this._queues).reduce((currentObj: { [key: string]: Observable<boolean> }, key: string) => {
+            if ( undefined === currentObj ) {
+                currentObj = {};
+            }
+
+            return Object.assign({}, currentObj, {
+                [key]: this._queues[key].busy$,
+            });
+        }, undefined);
+    }
+
+    /**
+     * method to query busy status of a specific queue
+     * @param: queueName the name of the queue to query
+     * @returns Promise that resolves into true (busy) or false (free)
+     */
     public isBusy(queueName: string): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
             if ( false === this._queues.hasOwnProperty(queueName) ) {

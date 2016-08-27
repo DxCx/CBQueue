@@ -255,4 +255,49 @@ describe("CBQueueDict", () => {
             done(err);
         });
     });
+
+    it("busy$ to be working", (done) => {
+        const cbqDict: CBQueueDict<void> = new CBQueueDict<void>();
+        let subscriptions: Array<Subscription> = [];
+        let counter: number = 0;
+
+        expect(cbqDict.push("ObsA", () => {
+        })).be.fulfilled;
+
+        expect(cbqDict.push("ObsB", () => {
+        })).be.instanceof(Promise);
+
+        expect(cbqDict.push("ObsC", () => {
+        })).be.instanceof(Promise);
+
+        expect(cbqDict.busy$).to.be.a("object");
+        subscriptions.push(cbqDict.busy$["ObsA"].subscribe((value) => {
+            if ( false === value ) {
+                counter += 1;
+            }
+        }, (err) => done(err)));
+        subscriptions.push(cbqDict.busy$["ObsB"].subscribe((value) => {
+            if ( false === value ) {
+                counter += 1;
+            }
+        }, (err) => done(err)));
+        subscriptions.push(cbqDict.busy$["ObsC"].subscribe((value) => {
+            if ( false === value ) {
+                counter += 1;
+            }
+        }, (err) => done(err)));
+
+        cbqDict.start().then(() => {
+            expect(counter).to.be.equal(3);
+            subscriptions.forEach((sub: Subscription) => {
+                sub.unsubscribe();
+            });
+            done();
+        }).catch((err: Error) => {
+            subscriptions.forEach((sub: Subscription) => {
+                sub.unsubscribe();
+            });
+            done(err);
+        });
+    });
 });
