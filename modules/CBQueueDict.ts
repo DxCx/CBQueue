@@ -13,8 +13,8 @@ export class CBQueueDict<T> {
 
     public isBusy(queueName: string): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
-            if ( true === this._started ) {
-                throw new Error("Queue can be started only once!");
+            if ( false === this._queues.hasOwnProperty(queueName) ) {
+                reject(`${queueName} is not a queue`);
             }
 
             resolve(this._queues[queueName].busy$.take(1).toPromise());
